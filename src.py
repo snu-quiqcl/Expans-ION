@@ -4,6 +4,7 @@ import copy as cp
 from utils import *
 from scipy import special
 from tqdm.notebook import tqdm
+import time
 
 E_CHARGE = 1.6022*1e-19                # C
 HBAR = 6.62607015*10**(-34)/(2*np.pi)  # J s
@@ -389,14 +390,16 @@ class RunSim:
         secular_freqs = np.array(self.ION_CHAIN.MOD_PARAMS_DICT["secular"]).reshape(-1)
         rho_modes = np.sqrt(HBAR / (2*171*M_P*2*np.pi*secular_freqs))
 
+        # N-mode shape: (Num_mode, Mode_vector)
+        # Mode vector = [axis 1 ion 1, axis 1 ion 2, ..., axis 1 ion N, axis 2 ion 1, ..., axis 2 ion N]
         x_mode_vecs, y_mode_vecs = np.split(np.array(self.ION_CHAIN.MOD_PARAMS_DICT["n-mode"]), 2, axis=1)
         
+        # x/y_mode_vecs shape: (Num_mode, mode_vector_along_axis)
         rho_ions = np.zeros((self.ION_CHAIN.N_ION, self.ION_CHAIN.N_MOD, 2)) # x / y value for each ion & mode
         for ion_idx in range(self.ION_CHAIN.N_ION):
             for mode_idx in range(self.ION_CHAIN.N_MOD):
                 rho_ions[ion_idx][mode_idx][0] = x_mode_vecs[mode_idx,ion_idx] * rho_modes[mode_idx]
                 rho_ions[ion_idx][mode_idx][1] = y_mode_vecs[mode_idx,ion_idx] * rho_modes[mode_idx]
-        
         
         self.LD_params = np.zeros((self.ION_CHAIN.N_ION, 2, self.ION_CHAIN.N_MOD)) # 2 lasers for each ion
         for ion_idx in range(self.ION_CHAIN.N_ION):
@@ -428,8 +431,10 @@ class RunSim:
         return laguerre_factor
                     
     def _update_K(self, t_curr):
-        K_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128).to(self.dev)
-        K_d_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128).to(self.dev)
+        K_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128, device=self.dev)
+        K_d_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128, device=self.dev)
+        # K_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128).to(self.dev)
+        # K_d_mat_dt = torch.zeros(tuple(self.ION_CHAIN.tensor_index_array), dtype=torch.complex128).to(self.dev)
         
         for ion_idx in range(self.ION_CHAIN.N_ION):
             for laser_idx in range(2):
@@ -469,28 +474,37 @@ class RunSim:
             # step 1
             # Update K matrix
             t_curr = iter*dt
+            
             K_matrix, K_d_matrix = self._update_K(t_curr)
+            
             # Compute k1
-            k1= sum_product(self.ION_CHAIN.N_MOD, rho_prev, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            k1, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
             
             # step 2-3
             # Update K matrix & Compute k2, k3
             t_curr = iter*dt + dt/2
+            
             K_matrix, K_d_matrix = self._update_K(t_curr)
-            k2 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k1/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            
+            k2, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k1/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
-            k3 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k2/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            
+            
+            k3, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k2/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
-                            rho_shift_plus, rho_shift_minus)
+                            rho_shift_plus, rho_shift_minus)            
 
             # step 4
             # Update K matrix & Compute k4
             t_curr = iter*dt + dt
+            
             K_matrix, K_d_matrix = self._update_K(t_curr)
-            k4 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k3, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            
+            start_t = time.time()
+            k4, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k3, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
             

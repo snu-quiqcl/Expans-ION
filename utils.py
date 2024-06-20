@@ -1,5 +1,5 @@
 import numpy as np
-import torch
+import torch, time
 import copy as cp
 
 E_CHARGE = 1.6022*1e-19                # C
@@ -21,6 +21,7 @@ def sum_product(N_MOD, rho_prev, K_mat, K_d_mat, J_mat_heating = list(), J_mat_d
     
     K_term = torch.einsum(K_einsum_string, K_mat, rho_prev)
     K_d_term = torch.einsum(K_einsum_string, rho_prev, K_d_mat)
+    K_term_sum = K_term + K_d_term
     
     # Add to GPU memory
     rho_plus_list = list()
@@ -28,7 +29,7 @@ def sum_product(N_MOD, rho_prev, K_mat, K_d_mat, J_mat_heating = list(), J_mat_d
     J_term_heating_plus_list = list()
     J_term_heating_minus_list = list()
     J_term_dephasing_list = list()
-
+    
     for i in range(N_MOD):
         rho_plus = torch.zeros_like(rho_prev, dtype=torch.complex128)
         rho_minus = torch.zeros_like(rho_prev, dtype=torch.complex128)
@@ -44,15 +45,15 @@ def sum_product(N_MOD, rho_prev, K_mat, K_d_mat, J_mat_heating = list(), J_mat_d
         J_term_heating_plus_list.append(J_term_heating_plus)
         J_term_heating_minus_list.append(J_term_heating_minus)
         J_term_dephasing_list.append(J_term_dephasing)
-
-    K_term_sum = K_term + K_d_term
+    
+    
     J_term_sum = torch.zeros_like(rho_prev, dtype=torch.complex128)
     for i in range(N_MOD):
         J_term_sum += J_term_heating_plus_list[i] + J_term_heating_minus_list[i] + J_term_dephasing_list[i]
         
     # Release from GPU memory
     del rho_plus_list, rho_minus_list
-    
+
     return K_term_sum + J_term_sum
 
 def generate_sum_product_einsum_string(tensor_shape, N_MOD):
@@ -150,3 +151,22 @@ class NatConst:
         self.hbar = 6.62607015*10**(-34)/(2*np.pi)  # J s
         self.m_p = 1.67262192*10**(-27)             # kg
         self.k_B = 1.380649*10**(-23)
+
+# # Example usage
+# # Define tensors with shape (a, a, b, b, c, c, ...)
+# shape = (2, 2, 3, 3, 4, 4, 5, 5, 2, 2, 2, 2)  
+# shape = (3, 3, 5, 5, 2, 2) 
+# N_MOD = 2
+# tensor1 = np.random.rand(*shape)
+
+# # Generate the einsum string
+# einsum_string = generate_sum_product_einsum_string(tensor1.shape, N_MOD)
+# print(einsum_string)
+
+# rho_shift_plus, rho_shift_minus = generate_rho_shift_tuples(N_MOD)
+# print("plus")
+# for i in rho_shift_plus:
+#     print(i)
+# print("minus")
+# for i in rho_shift_minus:
+#     print(i)
