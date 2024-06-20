@@ -13,5 +13,7 @@ BasicAPI.ipynb
 ## Simulating 2-qubit operation with 4 motional modes
 - N-mode: Truncated number of modes for each motional modes
 ### N-mode = 2
+![n=2](https://github.com/snu-quiqcl/Expans-ION/assets/57527282/75f9e43a-2582-4e40-a03f-860512c6fc27)
 
 ### N-mode = 3
+![n=3](https://github.com/snu-quiqcl/Expans-ION/assets/57527282/273f02a7-8a03-4f1c-9e5a-a89221d533bf)
