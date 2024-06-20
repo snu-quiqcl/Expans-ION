@@ -17,3 +17,6 @@ BasicAPI.ipynb
 
 ### N-mode = 3
 ![n=3](https://github.com/snu-quiqcl/Expans-ION/assets/57527282/273f02a7-8a03-4f1c-9e5a-a89221d533bf)
+
+### MS gate with N-mode = 3
+![32c71db2-61fd-4ee1-99bc-6ca55f9cf060](https://github.com/snu-quiqcl/Expans-ION/assets/57527282/471257f3-132a-4c56-aedd-432bcbfcfdc1)
