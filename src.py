@@ -478,7 +478,7 @@ class RunSim:
             K_matrix, K_d_matrix = self._update_K(t_curr)
             
             # Compute k1
-            k1, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            k1 = sum_product(self.ION_CHAIN.N_MOD, rho_prev, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
             
@@ -488,12 +488,12 @@ class RunSim:
             
             K_matrix, K_d_matrix = self._update_K(t_curr)
             
-            k2, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k1/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            k2 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k1/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
             
             
-            k3, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k2/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            k3 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k2/2, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)            
 
@@ -504,7 +504,7 @@ class RunSim:
             K_matrix, K_d_matrix = self._update_K(t_curr)
             
             start_t = time.time()
-            k4, elapsed_K, elapsed_rho_shift, elapsed_J = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k3, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
+            k4 = sum_product(self.ION_CHAIN.N_MOD, rho_prev + dt*k3, K_matrix, K_d_matrix, Jmats_heat, Jmats_dephase, 
                             K_einsum_string, J_einsum_string_list,
                             rho_shift_plus, rho_shift_minus)
             
